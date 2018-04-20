@@ -690,6 +690,11 @@ Status PlasmaStore::process_message(Client* client) {
       int device_num;
       RETURN_NOT_OK(ReadCreateRequest(input, input_size, &object_id, &data_size,
                                       &metadata_size, &device_num));
+      std::chrono::milliseconds start =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+      );
+      ARROW_LOG(INFO) << "Creating object " << object_id << " at " << start.count();
       int error_code =
           create_object(object_id, data_size, metadata_size, device_num, client, &object);
       int64_t mmap_size = 0;
@@ -736,6 +741,11 @@ Status PlasmaStore::process_message(Client* client) {
     case MessageType_PlasmaSealRequest: {
       unsigned char digest[kDigestSize];
       RETURN_NOT_OK(ReadSealRequest(input, input_size, &object_id, &digest[0]));
+      std::chrono::milliseconds start =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+      );
+      ARROW_LOG(INFO) << "Sealing object " << object_id << " at " << start.count();
       seal_object(object_id, &digest[0]);
     } break;
     case MessageType_PlasmaEvictRequest: {
