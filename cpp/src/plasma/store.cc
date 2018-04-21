@@ -694,7 +694,7 @@ Status PlasmaStore::process_message(Client* client) {
       std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()
       );
-      ARROW_LOG(INFO) << "Creating object " << object_id << " at " << start.count();
+      ARROW_LOG(INFO) << "Creating object " << object_id.hex() << " at " << start.count();
       int error_code =
           create_object(object_id, data_size, metadata_size, device_num, client, &object);
       int64_t mmap_size = 0;
@@ -745,7 +745,7 @@ Status PlasmaStore::process_message(Client* client) {
       std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()
       );
-      ARROW_LOG(INFO) << "Sealing object " << object_id << " at " << start.count();
+      ARROW_LOG(INFO) << "Sealing object " << object_id.hex() << " at " << start.count();
       seal_object(object_id, &digest[0]);
     } break;
     case MessageType_PlasmaEvictRequest: {
