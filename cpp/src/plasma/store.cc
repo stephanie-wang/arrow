@@ -623,7 +623,12 @@ void PlasmaStore::send_notifications(int client_fd) {
       it->second.object_notifications.begin(),
       it->second.object_notifications.begin() + num_processed);
   if (!it->second.object_notifications.empty()) {
-    ARROW_LOG(INFO) << it->second.object_notifications.size() << " notifications left";
+    std::chrono::milliseconds start =
+    std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::system_clock::now().time_since_epoch()
+    );
+    ARROW_LOG(INFO) << it->second.object_notifications.size() << " notifications left"
+      << " at " << start.count();
   }
 
   // Stop sending notifications if the pipe was broken.
