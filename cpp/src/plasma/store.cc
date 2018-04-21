@@ -622,6 +622,9 @@ void PlasmaStore::send_notifications(int client_fd) {
   it->second.object_notifications.erase(
       it->second.object_notifications.begin(),
       it->second.object_notifications.begin() + num_processed);
+  if (!it->second.object_notifications.empty()) {
+    ARROW_LOG(INFO) << it->second.object_notifications.size() << " notifications left";
+  }
 
   // Stop sending notifications if the pipe was broken.
   if (closed) {
