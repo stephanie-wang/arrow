@@ -756,6 +756,14 @@ Status PlasmaStore::process_message(Client* client) {
       );
       ARROW_LOG(INFO) << "Sealing object " << object_id.hex() << " at " << start.count();
       seal_object(object_id, &digest[0]);
+
+      // Evict a small number of objects if we reach 90% utilization.
+      if (eviction_policy_.utilization() >= 0.9) {
+        std::vector<ObjectID> objects_to_evict;
+        bool success =
+            eviction_policy_.require_space(0, &objects_to_evict);
+        delete_objects(objects_to_evict);
+      }
     } break;
     case MessageType_PlasmaEvictRequest: {
       // This code path should only be used for testing.

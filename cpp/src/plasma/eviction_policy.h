@@ -125,6 +125,8 @@ class EvictionPolicy {
   /// @param object_id The ID of the object that is now being used.
   void remove_object(const ObjectID& object_id);
 
+  float utilization();
+
  private:
   /// The amount of memory (in bytes) currently being used.
   int64_t memory_used_;

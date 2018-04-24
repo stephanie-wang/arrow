@@ -51,6 +51,10 @@ int64_t LRUCache::choose_objects_to_evict(int64_t num_bytes_required,
 EvictionPolicy::EvictionPolicy(PlasmaStoreInfo* store_info)
     : memory_used_(0), store_info_(store_info) {}
 
+float EvictionPolicy::utilization() {
+  return static_cast<float>(memory_used_) / static_cast<float>(store_info_->memory_capacity);
+}
+
 int64_t EvictionPolicy::choose_objects_to_evict(int64_t num_bytes_required,
                                                 std::vector<ObjectID>* objects_to_evict) {
   int64_t bytes_evicted =
@@ -79,7 +83,7 @@ bool EvictionPolicy::require_space(int64_t size,
   int64_t required_space = memory_used_ + size - store_info_->memory_capacity;
   /* Try to free up at least as much space as we need right now but ideally
    * up to 20% of the total capacity. */
-  int64_t space_to_free = std::max(required_space, store_info_->memory_capacity / 5);
+  int64_t space_to_free = std::max(required_space, store_info_->memory_capacity / 10000);
   ARROW_LOG(DEBUG) << "not enough space to create this object, so evicting objects";
   /* Choose some objects to evict, and update the return pointers. */
   int64_t num_bytes_evicted = choose_objects_to_evict(space_to_free, objects_to_evict);
