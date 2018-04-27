@@ -373,7 +373,7 @@ cdef class PlasmaClient:
                                          object_buffers[i].metadata_size))
         return result
 
-    def put(self, object value, ObjectID object_id=None, int memcopy_threads=6,
+    def put(self, object value, ObjectID object_id=None, int memcopy_threads=12,
             serialization_context=None):
         """
         Store a Python value into the object store.

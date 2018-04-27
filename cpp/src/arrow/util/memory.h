@@ -52,19 +52,13 @@ void parallel_memcopy(uint8_t* dst, const uint8_t* src, int64_t nbytes,
   // Each thread gets a "chunk" of k blocks.
 
   // Start all threads first and handle leftovers while threads run.
+  #pragma omp parallel for num_threads(num_threads)
   for (int i = 0; i < num_threads; i++) {
-    threadpool[i] = std::thread(memcpy, dst + prefix + i * chunk_size,
-                                left + i * chunk_size, chunk_size);
+    memcpy(dst + prefix + i * chunk_size, left + i * chunk_size, chunk_size);
   }
 
   memcpy(dst, src, prefix);
   memcpy(dst + prefix + num_threads * chunk_size, right, suffix);
-
-  for (auto& t : threadpool) {
-    if (t.joinable()) {
-      t.join();
-    }
-  }
 }
 
 }  // namespace internal

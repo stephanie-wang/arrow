@@ -348,6 +348,8 @@ if ("${ARROW_GENERATE_COVERAGE}")
   endif()
 endif()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+
 # CMAKE_CXX_FLAGS now fully assembled
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
