@@ -62,9 +62,18 @@ int recv_fd(int conn) {
   char buf[CMSG_SPACE(sizeof(int))];
   init_msg(&msg, &iov, buf, sizeof(buf));
 
-  if (recvmsg(conn, &msg, 0) == -1) {
-    ARROW_LOG(WARNING) << "Error in recv_fd" << errno;
-    return -1;
+  while (true) {
+    int error = recvmsg(conn, &msg, 0);
+    if (error == -1) {
+      if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        continue;
+      } else {
+        ARROW_LOG(INFO) << "Error in recv_fd" << errno;
+        return -1;
+      }
+    } else {
+      break;
+    }
   }
 
   int found_fd = -1;
