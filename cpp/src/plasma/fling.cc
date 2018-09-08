@@ -63,7 +63,7 @@ int recv_fd(int conn) {
   init_msg(&msg, &iov, buf, sizeof(buf));
 
   if (recvmsg(conn, &msg, 0) == -1) {
-    ARROW_LOG(INFO) << "Error in recv_fd" << errno;
+    ARROW_LOG(WARNING) << "Error in recv_fd" << errno;
     return -1;
   }
 
@@ -90,6 +90,7 @@ int recv_fd(int conn) {
   // them all to prevent fd leaks but notify the caller that we got
   // a bad message.
   if (oh_noes) {
+    ARROW_LOG(WARNING) << "OH NO error in recv_fd" << errno;
     close(found_fd);
     errno = EBADMSG;
     return -1;

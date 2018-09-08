@@ -385,7 +385,7 @@ Status PlasmaClient::Impl::Create(const ObjectID& object_id, int64_t data_size,
   // descriptor.
   if (device_num == 0) {
     int fd = recv_fd(store_conn_);
-    ARROW_CHECK(fd >= 0) << "recv not successful";
+    ARROW_CHECK(fd >= 0) << "recv not successful, error: " << errno;
     ARROW_CHECK(object.data_size == data_size);
     ARROW_CHECK(object.metadata_size == metadata_size);
     // The metadata should come right after the data.
