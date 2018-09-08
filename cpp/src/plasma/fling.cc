@@ -16,6 +16,8 @@
 
 #include <string.h>
 
+#include "arrow/util/logging.h"
+
 void init_msg(struct msghdr* msg, struct iovec* iov, char* buf, size_t buf_len) {
   iov->iov_base = buf;
   iov->iov_len = 1;
@@ -60,7 +62,10 @@ int recv_fd(int conn) {
   char buf[CMSG_SPACE(sizeof(int))];
   init_msg(&msg, &iov, buf, sizeof(buf));
 
-  if (recvmsg(conn, &msg, 0) == -1) return -1;
+  if (recvmsg(conn, &msg, 0) == -1) {
+    ARROW_LOG(INFO) << "Error in recv_fd" << errno;
+    return -1;
+  }
 
   int found_fd = -1;
   int oh_noes = 0;
