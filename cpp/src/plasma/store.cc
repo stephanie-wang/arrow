@@ -788,11 +788,6 @@ Status PlasmaStore::ProcessMessage(Client* client) {
     case fb::MessageType::PlasmaSealRequest: {
       unsigned char digest[kDigestSize];
       RETURN_NOT_OK(ReadSealRequest(input, input_size, &object_id, &digest[0]));
-      std::chrono::milliseconds start =
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch()
-      );
-      ARROW_LOG(INFO) << "Sealing object " << object_id.hex() << " at " << start.count();
       SealObject(object_id, &digest[0]);
 
       // Evict a small number of objects if we reach 90% utilization.
@@ -801,6 +796,14 @@ Status PlasmaStore::ProcessMessage(Client* client) {
         bool success =
             eviction_policy_.RequireSpace(0, &objects_to_evict);
         DeleteObjects(objects_to_evict);
+        std::chrono::milliseconds start =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::system_clock::now().time_since_epoch()
+        );
+        ARROW_LOG(INFO) << "Utilization is " << eviction_policy_.Utilization() << " of " << store_info_.memory_capacity;
+        for (const auto &object_id : objects_to_evict) {
+          ARROW_LOG(INFO) << "Evicting object " << object_id.hex() << " at " << start.count();
+        }
       }
     } break;
     case fb::MessageType::PlasmaEvictRequest: {
