@@ -792,18 +792,11 @@ Status PlasmaStore::ProcessMessage(Client* client) {
 
       // Evict a small number of objects if we reach 90% utilization.
       if (eviction_policy_.Utilization() >= 0.9) {
+        ARROW_LOG(INFO) << "Utilization is " << eviction_policy_.Utilization() << " of " << store_info_.memory_capacity;
         std::vector<ObjectID> objects_to_evict;
         bool success =
             eviction_policy_.RequireSpace(0, &objects_to_evict);
         DeleteObjects(objects_to_evict);
-        std::chrono::milliseconds start =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-          std::chrono::system_clock::now().time_since_epoch()
-        );
-        ARROW_LOG(INFO) << "Utilization is " << eviction_policy_.Utilization() << " of " << store_info_.memory_capacity;
-        for (const auto &object_id : objects_to_evict) {
-          ARROW_LOG(INFO) << "Evicting object " << object_id.hex() << " at " << start.count();
-        }
       }
     } break;
     case fb::MessageType::PlasmaEvictRequest: {

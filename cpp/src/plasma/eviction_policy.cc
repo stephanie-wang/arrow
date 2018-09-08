@@ -86,9 +86,12 @@ bool EvictionPolicy::RequireSpace(int64_t size, std::vector<ObjectID>* objects_t
   ARROW_LOG(DEBUG) << "not enough space to create this object, so evicting objects";
   // Choose some objects to evict, and update the return pointers.
   int64_t num_bytes_evicted = ChooseObjectsToEvict(space_to_free, objects_to_evict);
-  ARROW_LOG(INFO) << "There is not enough space to create this object, so evicting "
+  ARROW_LOG(INFO) << "There is not enough space to create this object of size " << size << ", so evicting "
                   << objects_to_evict->size() << " objects to free up "
                   << num_bytes_evicted << " bytes.";
+  for (const auto &object_id : *objects_to_evict) {
+    ARROW_LOG(INFO) << "Evicting object " << object_id.hex();
+  }
   return num_bytes_evicted >= required_space && num_bytes_evicted > 0;
 }
 
