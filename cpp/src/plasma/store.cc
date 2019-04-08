@@ -864,12 +864,12 @@ Status PlasmaStore::ProcessMessage(Client* client) {
       RETURN_NOT_OK(ReadSealRequest(input, input_size, &object_id, &digest[0]));
       SealObject(object_id, &digest[0]);
 
-      // Evict a small number of objects if we reach 90% utilization.
-      if (eviction_policy_.Utilization() >= 0.9) {
-        std::vector<ObjectID> objects_to_evict;
-        static_cast<void>(eviction_policy_.RequireSpace(0, &objects_to_evict));
-        DeleteObjects(objects_to_evict);
-      }
+      //// Evict a small number of objects if we reach 90% utilization.
+      //if (eviction_policy_.Utilization() >= 0.9) {
+      //  std::vector<ObjectID> objects_to_evict;
+      //  static_cast<void>(eviction_policy_.RequireSpace(0, &objects_to_evict));
+      //  DeleteObjects(objects_to_evict);
+      //}
     } break;
     case fb::MessageType::PlasmaEvictRequest: {
       // This code path should only be used for testing.
