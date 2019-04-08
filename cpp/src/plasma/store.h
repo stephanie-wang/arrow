@@ -75,7 +75,7 @@ class PlasmaStore {
   using NotificationMap = std::unordered_map<int, NotificationQueue>;
 
   // TODO: PascalCase PlasmaStore methods.
-  PlasmaStore(EventLoop* loop, std::string directory, bool hugetlbfs_enabled);
+  PlasmaStore(EventLoop* loop, std::string directory, bool hugetlbfs_enabled, int eviction_fraction);
 
   ~PlasmaStore();
 

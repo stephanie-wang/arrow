@@ -49,7 +49,7 @@ int64_t LRUCache::ChooseObjectsToEvict(int64_t num_bytes_required,
   return bytes_evicted;
 }
 
-EvictionPolicy::EvictionPolicy(PlasmaStoreInfo* store_info) : store_info_(store_info) {}
+EvictionPolicy::EvictionPolicy(PlasmaStoreInfo* store_info, int64_t eviction_fraction) : store_info_(store_info), eviction_fraction_(eviction_fraction) {}
 
 int64_t EvictionPolicy::ChooseObjectsToEvict(int64_t num_bytes_required,
                                              std::vector<ObjectID>* objects_to_evict) {
@@ -60,6 +60,10 @@ int64_t EvictionPolicy::ChooseObjectsToEvict(int64_t num_bytes_required,
     cache_.Remove(object_id);
   }
   return bytes_evicted;
+}
+
+float EvictionPolicy::Utilization() {
+  return static_cast<float>(PlasmaAllocator::Allocated()) / static_cast<float>(PlasmaAllocator::GetFootprintLimit());
 }
 
 void EvictionPolicy::ObjectCreated(const ObjectID& object_id) {
@@ -74,7 +78,7 @@ bool EvictionPolicy::RequireSpace(int64_t size, std::vector<ObjectID>* objects_t
   // Try to free up at least as much space as we need right now but ideally
   // up to 20% of the total capacity.
   int64_t space_to_free =
-      std::max(required_space, PlasmaAllocator::GetFootprintLimit() / 5);
+      std::max(required_space, PlasmaAllocator::GetFootprintLimit() / eviction_fraction_);
   ARROW_LOG(DEBUG) << "not enough space to create this object, so evicting objects";
   // Choose some objects to evict, and update the return pointers.
   int64_t num_bytes_evicted = ChooseObjectsToEvict(space_to_free, objects_to_evict);

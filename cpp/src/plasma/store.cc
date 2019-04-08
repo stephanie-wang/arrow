@@ -108,8 +108,8 @@ GetRequest::GetRequest(Client* client, const std::vector<ObjectID>& object_ids)
 
 Client::Client(int fd) : fd(fd), notification_fd(-1) {}
 
-PlasmaStore::PlasmaStore(EventLoop* loop, std::string directory, bool hugepages_enabled)
-    : loop_(loop), eviction_policy_(&store_info_) {
+PlasmaStore::PlasmaStore(EventLoop* loop, std::string directory, bool hugepages_enabled, int eviction_fraction)
+    : loop_(loop), eviction_policy_(&store_info_, eviction_fraction) {
   store_info_.directory = directory;
   store_info_.hugepages_enabled = hugepages_enabled;
 #ifdef PLASMA_CUDA
@@ -863,6 +863,13 @@ Status PlasmaStore::ProcessMessage(Client* client) {
       unsigned char digest[kDigestSize];
       RETURN_NOT_OK(ReadSealRequest(input, input_size, &object_id, &digest[0]));
       SealObject(object_id, &digest[0]);
+
+      // Evict a small number of objects if we reach 90% utilization.
+      if (eviction_policy_.Utilization() >= 0.9) {
+        std::vector<ObjectID> objects_to_evict;
+        static_cast<void>(eviction_policy_.RequireSpace(0, &objects_to_evict));
+        DeleteObjects(objects_to_evict);
+      }
     } break;
     case fb::MessageType::PlasmaEvictRequest: {
       // This code path should only be used for testing.
@@ -896,10 +903,10 @@ class PlasmaStoreRunner {
  public:
   PlasmaStoreRunner() {}
 
-  void Start(char* socket_name, std::string directory, bool hugepages_enabled) {
+  void Start(char* socket_name, std::string directory, bool hugepages_enabled, int eviction_fraction) {
     // Create the event loop.
     loop_.reset(new EventLoop);
-    store_.reset(new PlasmaStore(loop_.get(), directory, hugepages_enabled));
+    store_.reset(new PlasmaStore(loop_.get(), directory, hugepages_enabled, eviction_fraction));
     plasma_config = store_->GetPlasmaStoreInfo();
 
     // We are using a single memory-mapped file by mallocing and freeing a single
@@ -948,14 +955,14 @@ void HandleSignal(int signal) {
 }
 
 void StartServer(char* socket_name, std::string plasma_directory,
-                 bool hugepages_enabled) {
+                 bool hugepages_enabled, int eviction_fraction) {
   // Ignore SIGPIPE signals. If we don't do this, then when we attempt to write
   // to a client that has already died, the store could die.
   signal(SIGPIPE, SIG_IGN);
 
   g_runner.reset(new PlasmaStoreRunner());
   signal(SIGTERM, HandleSignal);
-  g_runner->Start(socket_name, plasma_directory, hugepages_enabled);
+  g_runner->Start(socket_name, plasma_directory, hugepages_enabled, eviction_fraction);
 }
 
 }  // namespace plasma
@@ -968,8 +975,9 @@ int main(int argc, char* argv[]) {
   std::string plasma_directory;
   bool hugepages_enabled = false;
   int64_t system_memory = -1;
+  int eviction_fraction = 5;
   int c;
-  while ((c = getopt(argc, argv, "s:m:d:h")) != -1) {
+  while ((c = getopt(argc, argv, "s:m:d:e:h")) != -1) {
     switch (c) {
       case 'd':
         plasma_directory = std::string(optarg);
@@ -991,10 +999,19 @@ int main(int argc, char* argv[]) {
                         << "GB of memory.";
         break;
       }
+      case 'e': {
+        char extra;
+        int scanned = sscanf(optarg, "%d%c", &eviction_fraction, &extra);
+        ARROW_CHECK(scanned == 1);
+        break;
+      }
       default:
         exit(-1);
     }
   }
+  ARROW_LOG(INFO) << "Allowing the Plasma store to evict up to 1 / "
+                  << eviction_fraction
+                  << " of objects.";
   // Sanity check command line options.
   if (!socket_name) {
     ARROW_LOG(FATAL) << "please specify socket for incoming connections with -s switch";
@@ -1041,7 +1058,7 @@ int main(int argc, char* argv[]) {
   }
 #endif
   ARROW_LOG(DEBUG) << "starting server listening on " << socket_name;
-  plasma::StartServer(socket_name, plasma_directory, hugepages_enabled);
+  plasma::StartServer(socket_name, plasma_directory, hugepages_enabled, eviction_fraction);
   plasma::g_runner->Shutdown();
   plasma::g_runner = nullptr;
 

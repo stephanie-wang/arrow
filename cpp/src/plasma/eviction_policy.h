@@ -62,7 +62,7 @@ class EvictionPolicy {
   ///
   /// @param store_info Information about the Plasma store that is exposed
   ///        to the eviction policy.
-  explicit EvictionPolicy(PlasmaStoreInfo* store_info);
+  explicit EvictionPolicy(PlasmaStoreInfo* store_info, int64_t eviction_fraction);
 
   /// This method will be called whenever an object is first created in order to
   /// add it to the LRU cache. This is done so that the first time, the Plasma
@@ -125,9 +125,12 @@ class EvictionPolicy {
   /// @param object_id The ID of the object that is now being used.
   void RemoveObject(const ObjectID& object_id);
 
+  float Utilization();
+
  private:
   /// Pointer to the plasma store info.
   PlasmaStoreInfo* store_info_;
+  int eviction_fraction_;
   /// Datastructure for the LRU cache.
   LRUCache cache_;
 };
